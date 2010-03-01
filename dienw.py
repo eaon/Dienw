@@ -8,6 +8,18 @@ import os
 import glob
 import urlparse
 
+# @@ Todo
+# * Prettier design
+# * Presentation, print and mobile CSS?
+# * Preview that includes diff
+# * List of deleted pages and its revisions
+# * If the login-email-address is not in the name-db, prompt user for name
+# * Migrate old signup page and change password page
+# * Check for valid email address in username
+# * Prettier diff page
+# * Write proper documentation/setup guide
+# * iPhone app
+
 config = {}
 
 exists = os.path.exists
