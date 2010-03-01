@@ -1,0 +1,3 @@
+* [Home](/)
+* [Projects](/projects)
+* [About This Site](/@meta/about)
