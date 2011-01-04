@@ -577,7 +577,7 @@ def meta(name):
             for (fn, count) in results: 
                 n = fn[:-4]
                 c += '* [%s](/%s) - %s matches\n' % \
-                     (pageTitle(name=n), name, count)
+                     (pageTitle(name=n), n, count)
                
             s += markdown(c)
         return html(t, content(t, s))
