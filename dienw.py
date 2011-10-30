@@ -168,7 +168,7 @@ def menu():
     return s
 
 def html(ptitle, body):
-   s = 'Content-Type: text/html; charsetet=utf-8\r\n\r\n'
+   s = 'Content-Type: text/html; charset=utf-8\r\n\r\n'
    s += open(".dienw/template.html").read()
    s = s.replace("<!--title-->", title)
    s = s.replace("<!--ptitle-->", ptitle)
