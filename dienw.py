@@ -645,7 +645,7 @@ def pageTitle(s=None,name=None):
     if s:
         if s.startswith('# '):
             return s.split("\n\n")[0][2:].strip()
-    return None
+    return name
 
 def links(s):
     # @@ replace with a regexp matching all markdown links
