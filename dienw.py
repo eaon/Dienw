@@ -444,22 +444,23 @@ def info(name):
         cut = 0
     for entry in history[cut:]:
         cc = commit and entry['commit'] == commit[0]
-        s += "1. Edited by\n"
-        s += "   :    %s\n" % entry['author']
-        s += "   Date\n"
-        if cc:
-            ds = "   :    **[%s](/%s?commit=%s)**\n\n"
+        s += "1. <dl><dt>Edited by</dt>\n"
+        s += "   <dd>%s</dd>\n" % entry['author']
+        s += "   <dt>Date</dt>\n"
+        if cc: 
+            ds = "   <dd>**[%s](/%s?commit=%s)**</dd>\n"
         else:
-            ds = "   :    [%s](/%s?commit=%s)\n\n"
+            ds = "   <dd>[%s](/%s?commit=%s)\n</dd>"
         s += ds % (entry['atime'].strftime(dstr), name[:-4], entry['commit'])
-        s += "   Compare\n   :    \n\n"
+        s += "   <dt>Compare</dt>\n   <dd><ul>\n"
         if not cc and commit:
-            s += "        * [current with this](%s)\n" % \
-                 "/@diff/%s?commit=%s&commit=%s" % \
+            s += "   <li>[current with this](%s)</li>\n" % \ 
+                 "/@diff/%s?commit=%s&commit=%s" % \ 
                  (name[:-4], commit[0], entry['commit'])
         if not entry == history[0]:
-            s += "        * [this with latest](%s)\n" % \
+            s += "   <li>[this with latest](%s)</li>\n" % \ 
                  "/@diff/%s?commit=%s" % (name[:-4], entry['commit'])
+        s += "   </ul></dd></dl>\n"
     return html(t, content(t, markdown(s)))
 
 def meta(name):
