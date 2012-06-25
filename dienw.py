@@ -433,7 +433,7 @@ def info(name):
         for key in outbound.keys():
             s += "    * [%s](/%s)\n" % (outbound[key], key)
         if len(outbound.keys()) == 0:
-            s += "    This page doesn't link anywhere.\n"
+            s += "    * This page doesn't link anywhere.\n"
     s += "\n"
     s += "## History\n\n"
     if len(history) <= 1:
@@ -454,11 +454,11 @@ def info(name):
         s += ds % (entry['atime'].strftime(dstr), name[:-4], entry['commit'])
         s += "   <dt>Compare</dt>\n   <dd><ul>\n"
         if not cc and commit:
-            s += "   <li>[current with this](%s)</li>\n" % \ 
-                 "/@diff/%s?commit=%s&commit=%s" % \ 
+            s += "   <li>[current with this](%s)</li>\n" % \
+                 "/@diff/%s?commit=%s&commit=%s" % \
                  (name[:-4], commit[0], entry['commit'])
         if not entry == history[0]:
-            s += "   <li>[this with latest](%s)</li>\n" % \ 
+            s += "   <li>[this with latest](%s)</li>\n" % \
                  "/@diff/%s?commit=%s" % (name[:-4], entry['commit'])
         s += "   </ul></dd></dl>\n"
     return html(t, content(t, markdown(s)))
