@@ -428,12 +428,12 @@ def info(name):
         for key in inbound.keys():
             s += "    * [%s](/%s)\n" % (inbound[key], key)
         if len(inbound.keys()) == 0:
-            s += "    * No pages link here.\n"
+            s += "    * No pages link here.\n\n"
         s += "Linking to\n:"
         for key in outbound.keys():
             s += "    * [%s](/%s)\n" % (outbound[key], key)
         if len(outbound.keys()) == 0:
-            s += "    * This page doesn't link anywhere.\n"
+            s += "    * This page doesn't link anywhere.\n\n"
     s += "\n"
     s += "## History\n\n"
     if len(history) <= 1:
