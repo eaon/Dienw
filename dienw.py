@@ -410,20 +410,20 @@ def info(name):
     s = "## Statistics\n\n"
     if not commit:
         s += "Last edited by\n"
-        s += ":    %s\n" % history[0]['author']
+        s += ":    %s\n\n" % history[0]['author']
     else:
         s += "Edited by\n"
-        s += ":    %s\n" % m['author']
+        s += ":    %s\n\n" % m['author']
     s += "Word count\n"
-    s += ":    %s\n" % words
+    s += ":    %s\n\n" % words
     s += "Character count\n"
-    s += ":    %s\n" % chars
+    s += ":    %s\n\n" % chars
     if commit:
         s += "Modified on\n"
-        s += ":    %s\n" % m['atime'].strftime(dstr)
+        s += ":    %s\n\n" % m['atime'].strftime(dstr)
     else:
         s += "Last modified on\n"
-        s += ":    %s\n" % lastmod.strftime(dstr)
+        s += ":    %s\n\n" % lastmod.strftime(dstr)
         s += "Linking here\n:"
         for key in inbound.keys():
             s += "    * [%s](/%s)\n" % (inbound[key], key)
@@ -448,11 +448,11 @@ def info(name):
         s += "   :    %s\n" % entry['author']
         s += "   Date\n"
         if cc:
-            ds = "   :    **[%s](/%s?commit=%s)**\n"
+            ds = "   :    **[%s](/%s?commit=%s)**\n\n"
         else:
-            ds = "   :    [%s](/%s?commit=%s)\n"
+            ds = "   :    [%s](/%s?commit=%s)\n\n"
         s += ds % (entry['atime'].strftime(dstr), name[:-4], entry['commit'])
-        s += "   Compare\n   :    \n"
+        s += "   Compare\n   :    \n\n"
         if not cc and commit:
             s += "        * [current with this](%s)\n" % \
                  "/@diff/%s?commit=%s&commit=%s" % \
