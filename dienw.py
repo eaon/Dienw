@@ -428,7 +428,7 @@ def info(name):
         for key in inbound.keys():
             s += "    * [%s](/%s)\n" % (inbound[key], key)
         if len(inbound.keys()) == 0:
-            s += "    No pages link here.\n"
+            s += "    * No pages link here.\n"
         s += "Linking to\n:"
         for key in outbound.keys():
             s += "    * [%s](/%s)\n" % (outbound[key], key)
