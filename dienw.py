@@ -652,7 +652,7 @@ def links(s):
     s = "<xml>%s</xml>" % markdown(s)
     ls = []
     # cause we care so much about performance
-    from elementtree import ElementTree
+    from xml.etree import ElementTree
     tree = ElementTree.fromstring(s)
     anchors = tree.findall(".//a")
     for anchor in anchors:
