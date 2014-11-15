@@ -296,7 +296,14 @@ def post(name):
                 break
     else:
         user = 'Anonymous <anonymous@dienw.com>'
-    
+
+    if user.startswith("noedit"):
+        t = 'Insufficient privileges'
+        s = 'Status: 403 Forbidden\r\n'
+        c = '<p>Sorry, you are not allowed to edit in this wiki.</p>'
+        s += html(t, content(t, c))
+        return s
+ 
     if p and s:
         return edit(name, s).replace('<!--preview-->', markdown(s))
     elif s:
