@@ -36,6 +36,7 @@ if env.has_key('SCRIPT_NAME'):
     if not exists('.dienw/links'):
         os.mkdir('.dienw/links/')
     base = config.get('base', '/')
+    base = '%s/' % base if not base[-1] == '/' else base
     title = config.get('title', 'Wiki')
     uri = env.get('REQUEST_URI')
     gform = urlparse.parse_qs(uri.partition('?')[2])
@@ -585,13 +586,14 @@ def meta(name):
     
     elif name == 'feed':
         keys, result = updates(20)
+        scheme = "http%s://" % 's' if env.has_key("HTTPS") else ''
         s = 'Content-Type: application/xml; charset=utf-8\r\n\r\n'
         s += '<?xml version="1.0" encoding="utf-8"?>\n'
         s += '<feed xmlns="http://www.w3.org/2005/Atom">\n'
         s += '<title>%s</title>\n' % title
-        s += '<link href="%s@meta/feed" rel="self" />\n' % base
+        s += '<link href="%s%s@meta/feed" rel="self" />\n' % (scheme, base)
         s += '<link href="%s" />\n' % base
-        fbase = "tag%s" % base.replace('/', '').replace('http', '')
+        fbase = "tag%s" % base.replace('/', '')
         pdate, ptime = tuple(keys[0].split(' '))
         ptime = ptime.rstrip('_')
         s += '<updated>%sT%sZ</updated>\n' % (pdate, ptime)
@@ -602,7 +604,7 @@ def meta(name):
             ptime = ptime.rstrip('_')
             s += '<entry>\n'
             s += '<title>%s</title>\n' % pageTitle(name=result[n])
-            s += '<link href="%s%s" />\n' % (base, result[n])
+            s += '<link href="%s%s%s" />\n' % (scheme, base, result[n])
             s += '<id>%s,%s:/%s</id>\n' % (fbase, pdate, result[n])
             s += '<updated>%sT%sZ</updated>\n' % (pdate, ptime)
             name = "%s.txt" % result[n]
