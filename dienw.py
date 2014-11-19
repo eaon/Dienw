@@ -42,6 +42,7 @@ if env.has_key('SCRIPT_NAME'):
     gform = urlparse.parse_qs(uri.partition('?')[2])
     pform = urlparse.parse_qs(sys.stdin.read())
     method = env.get('REQUEST_METHOD')
+    sfx = config.get('suffix', '.txt')
 
 r_name = re.compile(r'^[A-Za-z0-9-=?&]+$')
 dstr = '%Y-%m-%d %H:%M:%S'
@@ -214,7 +215,7 @@ def markdown(s):
               ['headerid(level=2)', 'def_list']).encode('utf-8')
 
 def diff(name):
-    name = "%s.txt" % name
+    name = "%s%s" % (name, sfx)
     
     commit = gform.get('commit', '')
     if not commit:
@@ -249,7 +250,7 @@ def get(name):
     
     commit = gform.get('commit', '')
     
-    if not commit and not exists("%s.txt" % name):
+    if not commit and not exists("%s%s" % (name, sfx)):
         c = '<p>This page does not yet exist. '
         c += '<a href="/@edit/%s">Create it!</a></p>\n' % name
         s = 'Status: 404 Not Found\r\n'
@@ -257,14 +258,14 @@ def get(name):
         return s
     
     if commit:
-        s = git_show("%s:%s.txt" % (commit[0], name))
+        s = git_show("%s:%s%s" % (commit[0], name, sfx))
         if s.startswith("# "):
             s = "# Previous version of " + s[2:]
             c = '**See the [current version](/%s).**' % name
             s = s.split('\n\n', 1)
             s = "%s\n\n%s\n\n%s" % (s[0], c, s[1])
-    elif exists("%s.txt" % name):
-        s = open("%s.txt" % name).read()
+    elif exists("%s%s" % (name, sfx)):
+        s = open("%s%s" % (name, sfx)).read()
         
     t = pageTitle(s)
     if t:
@@ -278,7 +279,7 @@ def get(name):
 
 def post(name): 
     existed = True
-    if not exists("%s.txt" % name):
+    if not exists("%s%s" % (name, sfx)):
         existed = False
     
     p = pform.get('preview', '')
@@ -307,7 +308,7 @@ def post(name):
     if p and s:
         return edit(name, s).replace('<!--preview-->', markdown(s))
     elif s:
-        open("%s.txt" % name, 'w').write(s)
+        open("%s%s" % (name, sfx), 'w').write(s)
         oldlinks = []
         if existed:
             oldlinks.extend(outboundLinks(name))
@@ -318,13 +319,13 @@ def post(name):
         for link in newlinks: 
             if link not in oldlinks: 
                 open('.dienw/links/%s%%%s' % (name, link), 'w').write('')
-        git_add("%s.txt" % name)
+        git_add("%s%s" % (name, sfx))
         git_commit('%s edited by %s' % (name, user.rsplit(' ', 1)[0]), user)
         # No redirect as we would redirect to ourselves, kind of pointless
         # main() checks for output of post(name) and falls back to get(name)
         # if there is none
     elif r:
-        git_remove('%s.txt' % name)
+        git_remove('%s%s' % (name, sfx))
         git_commit('%s removed by %s' % (name, user.rsplit(' ', 1)[0]), user)
         for fn in glob.glob('.dienw/links/%s%%*' % name):
             os.remove(fn)
@@ -338,10 +339,10 @@ def post(name):
 
 def edit(name, c=None):
     commit = gform.get('commit', '')
-    if not c and not commit and exists("%s.txt" % name):
-        c = open("%s.txt" % name).read()
+    if not c and not commit and exists("%s%s" % (name, sfx)):
+        c = open("%s%s" % (name, sfx)).read()
     elif commit:
-        c = git_show("%s:%s.txt" % (commit[0], name))
+        c = git_show("%s:%s%s" % (commit[0], name, sfx))
     elif not c:
         t = name
         c = ''
@@ -366,7 +367,7 @@ def edit(name, c=None):
     return html(t, content(t, s))
 
 def remove(name):
-    if exists("%s.txt" % name):
+    if exists("%s%s" % (name, sfx)):
         pt = pageTitle(name=name)
         t = 'Remove %s?' % pt
         c = 'Are you sure you want to remove the page *%s*?\n\n' % pt
@@ -386,9 +387,9 @@ def username(email):
 def info(name):
     commit = gform.get('commit', '')
 
-    if not commit and not exists("%s.txt" % name):
+    if not commit and not exists("%s%s" % (name, sfx)):
         return notfound(name)
-    name = "%s.txt" % name
+    name = "%s%s" % (name, sfx)
     if commit:
         s = git_show("%s:%s" % (commit[0], name))
         m = git_commit_log(commit[0])
@@ -403,13 +404,13 @@ def info(name):
     if not commit:
         inbound = {}
         for link in inboundLinks(name[:-4]):
-            if exists("%s.txt" % link):
+            if exists("%s%s" % (link, sfx)):
                 inbound[link] = pageTitle(name=link)
             else:
                 inbound[link] = link
         outbound = {}
         for link in outboundLinks(name[:-4]):
-            if exists("%s.txt" % link):
+            if exists("%s%s" % (link, sfx)):
                 outbound[link] = pageTitle(name=link)
             else:
                 outbound[link] = link
@@ -496,7 +497,7 @@ def meta(name):
         return html(t, content(t, markdown(c)))
         
     elif name == 'names': 
-       results = [fn[:-4] for fn in glob.glob('*.txt')]
+       results = [fn[:-4] for fn in glob.glob('*%s' % sfx)]
        results.sort()
        results = ['* [%s](/%s)' % (pageTitle(name=fn), fn) for fn in results]
        t = 'All Pages'
@@ -521,10 +522,10 @@ def meta(name):
     elif name == 'needed': 
         t = 'Needed Pages'
         results = {}
-        for fn in glob.glob('*.txt'):
+        for fn in glob.glob('*%s' % sfx):
             fn = fn[:-4]
             for needed in outboundLinks(fn):
-                if not exists("%s.txt" % needed):
+                if not exists("%s%s" % (needed, sfx)):
                     if results.has_key(needed):
                         results[needed].append(fn)
                     else:
@@ -547,7 +548,7 @@ def meta(name):
         c = "The following is a list of pages which aren't linked "
         c += 'to from any other page.\n\n'
         p = ''
-        for fn in glob.glob('*.txt'): 
+        for fn in glob.glob('*%s' % sfx):
            fn = fn[:-4]
            inbound = inboundLinks(fn)
            if len(inbound) == 0:
@@ -569,7 +570,7 @@ def meta(name):
             r_regexp = re.compile(regexp[0])
             
             results = {}
-            for fn in glob.glob('*.txt'): 
+            for fn in glob.glob('*%s' % sfx):
                for line in open(fn).read().splitlines(): 
                   find = r_regexp.findall(line)
                   if find: 
@@ -614,7 +615,7 @@ def meta(name):
             s += '<link href="%s%s%s" />\n' % (scheme, base, result[n])
             s += '<id>%s,%s:/%s</id>\n' % (fbase, pdate, result[n])
             s += '<updated>%sT%sZ</updated>\n' % (pdate, ptime)
-            name = "%s.txt" % result[n]
+            name = "%s%s" % (result[n], sfx)
             commit = git_log(name)[0]['commit']
             diff = git_diff(name, "%s^" % commit, commit)
             if diff:
@@ -630,7 +631,7 @@ def meta(name):
 
 def updates(i):
     result = {}
-    for name in glob.glob('*.txt'):
+    for name in glob.glob('*%s' % sfx):
         if r_name.match(name[:-4]):
             t = os.stat(name).st_mtime
             lastmod = datetime.datetime.fromtimestamp(t)
@@ -650,8 +651,8 @@ def outboundLinks(n):
     return [fn[13+len(n)+1:] for fn in glob.glob('.dienw/links/%s%%*' % n)]
 
 def pageTitle(s=None,name=None):
-    if name and exists('%s.txt' % name):
-        s = open("%s.txt" % name).read()
+    if name and exists('%s%s' % (name, sfx)):
+        s = open("%s%s" % (name, sfx)).read()
     if s:
         if s.startswith('# '):
             return s.split("\n\n")[0][2:].strip()
