@@ -43,6 +43,7 @@ if env.has_key('SCRIPT_NAME'):
     pform = urlparse.parse_qs(sys.stdin.read())
     method = env.get('REQUEST_METHOD')
     sfx = config.get('suffix', '.txt')
+    sfo = config.get('suffix-old', []).split(", ")
 
 r_name = re.compile(r'^[A-Za-z0-9-=?&]+$')
 dstr = '%Y-%m-%d %H:%M:%S'
@@ -55,7 +56,7 @@ def git(*args):
     cmd = subprocess.Popen( ['git'] + list(args),
         stdin = subprocess.PIPE,
         stdout = subprocess.PIPE,
-        stderr = sys.stderr )
+        stderr = subprocess.PIPE )
     return cmd
 
 def gitq(*args):
@@ -116,7 +117,15 @@ def git_remove(*files):
         raise GitError, r
 
 def git_show(file_cid):
-    cmd = git("show", "--pretty=raw", file_cid)
+    sfxs = [sfx]
+    sfxs.extend(sfo)
+    for sx in sfxs:
+        cmd = git("show", "--pretty=raw", "%s%s" % (file_cid[:-len(sfx)], sx))
+        err = cmd.stderr.read()
+        if err.startswith("fatal"):
+            continue
+        else:
+            break
     content = cmd.stdout.read()
     cmd.wait()
     return content
@@ -135,8 +144,10 @@ def git_commit_log(cid):
     git_commit_fmt(commit)
     return commit
 
-def git_diff(name, cid1, cid2):
-    cmd = git("diff", cid1 + ".." + cid2, name)
+def git_diff(names, cid1, cid2):
+    if not isinstance(names, list):
+        names = [names]
+    cmd = git("diff", "-C0.1", cid1 + ".." + cid2, "--", *names)
     out = cmd.stdout.read()
     cmd.wait()
     return out
@@ -216,10 +227,16 @@ def markdown(s):
               ['headerid(level=2)', 'def_list']).encode('utf-8')
 
 def diff(name):
-    name = "%s%s" % (name, sfx)
+    if sfo:
+        namel = ["%s%s" % (name, sfx)]
+        namel.extend(["%s%s" % (name, s) for s in sfo])
+        name = namel
+    else:
+        name = ["%s%s" % (name, sfx)]
     
     commit = gform.get('commit', '')
-    if not commit:
+    if not commit or None in \
+       [re.match("^[a-fA-F0-9]{6,40}$", c) for c in commit]:
         return notfound()
     
     if len(commit) == 1:
@@ -227,7 +244,8 @@ def diff(name):
     
     t = "Comparing commits %s and %s" % tuple(commit[:2])
     
-    s = markdown('Back to latest version of [%s](/%s)' % (name[:-4], name[:-4]))
+    s = markdown('Back to latest version of [%s](/%s)' % (name[0][:-len(sfx)],
+                                                          name[0][:-len(sfx)]))
     s += '\n<pre class="diff">'
     for l in git_diff(name, *commit[:2]).split('\n'):
             l = l.rstrip()
@@ -257,7 +275,10 @@ def get(name):
         s = 'Status: 404 Not Found\r\n'
         s += html(name, content(name, c))
         return s
-    
+
+    if commit and not re.match("^[a-fA-F0-9]{6,40}$", commit[0]):
+        return notfound()
+
     if commit:
         s = git_show("%s:%s%s" % (commit[0], name, sfx))
         if s.startswith("# "):
@@ -404,13 +425,13 @@ def info(name):
     words = len(s.split(' '))
     if not commit:
         inbound = {}
-        for link in inboundLinks(name[:-4]):
+        for link in inboundLinks(name[:-len(sfx)]):
             if exists("%s%s" % (link, sfx)):
                 inbound[link] = pageTitle(name=link)
             else:
                 inbound[link] = link
         outbound = {}
-        for link in outboundLinks(name[:-4]):
+        for link in outboundLinks(name[:-len(sfx)]):
             if exists("%s%s" % (link, sfx)):
                 outbound[link] = pageTitle(name=link)
             else:
@@ -461,15 +482,16 @@ def info(name):
             ds = "   <dd>**[%s](/%s?commit=%s)**</dd>\n"
         else:
             ds = "   <dd>[%s](/%s?commit=%s)\n</dd>"
-        s += ds % (entry['atime'].strftime(dstr), name[:-4], entry['commit'])
+        s += ds % (entry['atime'].strftime(dstr), name[:-len(sfx)],
+                   entry['commit'])
         s += "   <dt>Compare</dt>\n   <dd><ul>\n"
         if not cc and commit:
             s += "   <li>[current with this](%s)</li>\n" % \
                  "/@diff/%s?commit=%s&commit=%s" % \
-                 (name[:-4], commit[0], entry['commit'])
+                 (name[:-len(sfx)], commit[0], entry['commit'])
         if not entry == history[0]:
             s += "   <li>[this with latest](%s)</li>\n" % \
-                 "/@diff/%s?commit=%s" % (name[:-4], entry['commit'])
+                 "/@diff/%s?commit=%s" % (name[:-len(sfx)], entry['commit'])
         s += "   </ul></dd></dl>\n"
     return html(t, content(t, markdown(s)))
 
@@ -498,7 +520,7 @@ def meta(name):
         return html(t, content(t, markdown(c)))
         
     elif name == 'names': 
-       results = [fn[:-4] for fn in glob.glob('*%s' % sfx)]
+       results = [fn[:-len(sfx)] for fn in glob.glob('*%s' % sfx)]
        results.sort()
        results = ['* [%s](/%s)' % (pageTitle(name=fn), fn) for fn in results]
        t = 'All Pages'
@@ -524,7 +546,7 @@ def meta(name):
         t = 'Needed Pages'
         results = {}
         for fn in glob.glob('*%s' % sfx):
-            fn = fn[:-4]
+            fn = fn[:-len(sfx)]
             for needed in outboundLinks(fn):
                 if not exists("%s%s" % (needed, sfx)):
                     if results.has_key(needed):
@@ -550,7 +572,7 @@ def meta(name):
         c += 'to from any other page.\n\n'
         p = ''
         for fn in glob.glob('*%s' % sfx):
-           fn = fn[:-4]
+           fn = fn[:-len(sfx)]
            inbound = inboundLinks(fn)
            if len(inbound) == 0:
               p += '* [%s](/%s) ([Info](/@info/%s))\n' % \
@@ -586,7 +608,7 @@ def meta(name):
             
             c = '## Search Result for %r\n\n' % regexp[0]
             for (fn, count) in results: 
-                n = fn[:-4]
+                n = fn[:-len(sfx)]
                 c += '* [%s](/%s) - %s matches\n' % \
                      (pageTitle(name=n), n, count)
                
@@ -633,13 +655,13 @@ def meta(name):
 def updates(i):
     result = {}
     for name in glob.glob('*%s' % sfx):
-        if r_name.match(name[:-4]):
+        if r_name.match(name[:-len(sfx)]):
             t = os.stat(name).st_mtime
             lastmod = datetime.datetime.fromtimestamp(t)
             lastmod = lastmod.strftime(dstr)
             while result.has_key(lastmod):
                 lastmod += '_'
-            result[lastmod] = name[:-4]
+            result[lastmod] = name[:-len(sfx)]
     keys = result.keys()
     keys.sort()
     keys.reverse()
