@@ -81,7 +81,8 @@ def git_log(file = None, files = None):
     if file:
         files.append(file)
     
-    cmd = git("rev-list", "--all", "--pretty=raw",  "HEAD", "--", *files)
+    cmd = git("log", "--follow" if len(files) is 1 else "", "--pretty=raw",
+              *files)
     cmd.stdin.close()
     
     content = cmd.stdout.read()
