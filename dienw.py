@@ -43,7 +43,8 @@ if env.has_key('SCRIPT_NAME'):
     pform = urlparse.parse_qs(sys.stdin.read())
     method = env.get('REQUEST_METHOD')
     sfx = config.get('suffix', '.txt')
-    sfo = config.get('suffix-old', []).split(", ")
+    sfo = config.get('suffix-old', "").split(", ")
+    if "" in sfo: sfo.remove("")
 
 r_name = re.compile(r'^[A-Za-z0-9-=?&]+$')
 dstr = '%Y-%m-%d %H:%M:%S'
